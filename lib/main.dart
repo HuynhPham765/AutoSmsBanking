@@ -12,11 +12,18 @@ onBackgroundMessage(SmsMessage message) async {
   print(message.address); //+977981******67, sender nubmer
   print(message.body); //sms text
   print(message.date); //1659690242000, timestamp
-  String text = splitMoneyNumbers(message.body.toString());
-  await sendMessage(text);
+  if (message.address.toString() == 'Vietcombank' ||
+      message.address.toString() == 'SCB') {
+    String text =
+        splitMoneyNumbers(message.body.toString(), message.address.toString());
+    await sendMessage(text);
+  }
+  // String text =
+  //       splitMoneyNumbers(message.body.toString(), message.address.toString());
+  //   await sendMessage(text);
 }
 
-String splitMoneyNumbers(String string) {
+String splitMoneyNumbers(String string, String address) {
   String convertString =
       string.replaceFirst('GIAM ', '-').replaceFirst('TANG ', '+');
   final splitted = convertString.split(' ');
@@ -27,13 +34,17 @@ String splitMoneyNumbers(String string) {
       numbers.add(item);
     }
   }
-  String firstMoney = numbers[1];
-  String totalMoney = numbers[2];
+  String firstMoney = numbers[0];
+  String totalMoney = numbers[1];
+  if (numbers.length >= 3) {
+    firstMoney = numbers[1];
+    totalMoney = numbers[2];
+  }
   var startIndex = string.lastIndexOf('(') + 1;
-  var endIndex = string.lastIndexOf(')');
+  var endIndex = string.lastIndexOf(')') == -1 ? string.length -1 : string.lastIndexOf(')');
   String description = string.substring(startIndex, endIndex);
   String text =
-      'Biến động: $firstMoney\nSố dư: $totalMoney\nNội dung: $description\nNgân hàng: Test';
+      'Biến động: $firstMoney\nSố dư: $totalMoney\nNội dung: $description\nNgân hàng: $address';
 
   return text;
 }
@@ -97,7 +108,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
   String sms = "";
   Telephony telephony = Telephony.instance;
 
@@ -108,14 +118,17 @@ class _MyHomePageState extends State<MyHomePage> {
       listenInBackground: true,
       onBackgroundMessage: onBackgroundMessage,
     );
+    telephony.requestPhoneAndSmsPermissions;
     super.initState();
     // fetchSms();
   }
 
-  void testSendMessage() {
+  void testSendMessage() async {
+    // String string =
+    //     "TK 41344480001 NGAY 06/10/22 08:46 SD DAU 21,694,456 TANG 20,000,000 SD CUOI 41,694,456 VND (MONEY AND FAME)";
     String string =
-        "TK 41344480001 NGAY 06/10/22 08:46 SD DAU 21,694,456 TANG 20,000,000 SD CUOI 41,694,456 VND (MONEY AND FAME)";
-    String text = splitMoneyNumbers(string);
+        "SD TK 0181003531914 -10,000VND luc 27-07-2023 23:14:58. SD 13,787,118VND. Ref Ecom.EW23072745928322.ZALOPAY.0366304310.CashIn.b03dde0b740e";
+    String text = splitMoneyNumbers(string, 'SCB');
     sendMessage(text);
   }
 
@@ -138,12 +151,15 @@ class _MyHomePageState extends State<MyHomePage> {
               textAlign: TextAlign.center,
             ),
             InkWell(
-              onTap: () =>
-                  launchUrl(Uri.parse('https://t.me/+FNNg8jg7g_E3N2I1'), mode: LaunchMode.externalApplication),
+              onTap: () => launchUrl(
+                  Uri.parse('https://t.me/+FNNg8jg7g_E3N2I1'),
+                  mode: LaunchMode.externalApplication),
               child: const Text(
                 'https://t.me/+FNNg8jg7g_E3N2I1',
                 style: TextStyle(
-                    decoration: TextDecoration.underline, color: Colors.blue, decorationColor: Colors.blue),
+                    decoration: TextDecoration.underline,
+                    color: Colors.blue,
+                    decorationColor: Colors.blue),
               ),
             ),
           ],
